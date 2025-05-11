@@ -33,7 +33,7 @@
 ## 📸 Demo
 
 Check out the deepfake detection platform in action:
-![Video link](https://x.com/AbenMuath/status/1921544485575471296)
+[Watch the demo video](https://x.com/AbenMuath/status/1921544485575471296)
 The demo showcases:
 
 Real-time image analysis

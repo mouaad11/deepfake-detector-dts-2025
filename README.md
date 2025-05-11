@@ -32,8 +32,15 @@
 
 ## 📸 Demo
 
-[![Watch the demo video]]([https://www.youtube.com/watch?v=YOUR_VIDEO_ID_HERE](https://x.com/AbenMuath/status/1921544485575471296))
+Check out the deepfake detection platform in action:
+![Video link](https://x.com/AbenMuath/status/1921544485575471296)
+The demo showcases:
 
+Real-time image analysis
+Batch processing capabilities
+Video frame extraction and assessment
+Confidence scoring visualization
+Web interface functionality
 ---
 
 ## 🧪 Model Performance

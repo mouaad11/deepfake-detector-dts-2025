@@ -7,7 +7,7 @@ def deepfake_detector(request):
     Renders the deepfake_form.html template.
     All uploading & prediction calls are done client-side via JS.
     """
-    base_url = "https://9053-34-122-15-234.ngrok-free.app"
+    base_url = "you can paste your url here"
 
     return render(request, "deepfake_form.html", {
         "single_api": f"{base_url}/predict",

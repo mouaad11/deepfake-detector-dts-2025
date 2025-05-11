@@ -32,7 +32,7 @@
 
 ## 📸 Demo
 
-[![Watch the demo video](https://img.youtube.com/vi/YOUR_VIDEO_ID_HERE/0.jpg)]([https://www.youtube.com/watch?v=YOUR_VIDEO_ID_HERE](https://x.com/AbenMuath/status/1921544485575471296))
+[![Watch the demo video]]([https://www.youtube.com/watch?v=YOUR_VIDEO_ID_HERE](https://x.com/AbenMuath/status/1921544485575471296))
 
 ---
 
@@ -99,7 +99,7 @@ Comprehensive PDF documentation includes:
 - Evaluation
 - Adversarial defense research
 
-📄 [Read the Docs](#Deepfake_DTS_2025.pdf)
+📄 [Read the Docs]([#Deepfake_DTS_2025.pdf](https://github.com/mouaad11/deepfake-detector-dts-2025/blob/main/Deepfake_DTS_2025.pdf))
 
 ---
 

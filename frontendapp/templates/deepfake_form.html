@@ -1,0 +1,459 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeepFake Detector</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet"
+  href="{% static 'css/deepfake.css' %}?v={{ STATIC_VERSION }}">
+</head>
+<body>
+  <div class="container">
+    <h1>Real Recognize <span>Real</span> - DeepFake Recognizer</h1>
+    
+    <div class="tabs">
+      <button class="tab active" data-target="images-tab">
+        <i class="fas fa-images"></i> Images
+      </button>
+      <button class="tab" data-target="video-tab">
+        <i class="fas fa-video"></i> Video
+      </button>
+    </div>
+    
+    <div class="tab-content active" id="images-tab">
+      <div class="upload-area" id="imgUpload">
+        <p><i class="fas fa-cloud-upload-alt fa-2x"></i></p>
+        <p>Drag & drop images here<br>or click to browse</p>
+        <input type="file" id="imgInput" accept="image/*" multiple style="display:none">
+        <button type="button" id="imgBrowse">Select Images</button>
+      </div>
+    </div>
+    
+    <div class="tab-content" id="video-tab">
+      <div class="upload-area" id="vidUpload">
+        <p><i class="fas fa-film fa-2x"></i></p>
+        <p>Drag & drop a video here<br>or click to browse</p>
+        <input type="file" id="vidInput" accept="video/*" style="display:none">
+        <button type="button" id="vidBrowse">Select Video</button>
+      </div>
+    </div>
+    
+    <div id="loader" class="loader"></div>
+    
+    <div class="preview" id="preview"></div>
+    
+    <div class="result" id="result">
+      <h2 id="resLabel"></h2>
+      <p id="resDetail"></p>
+      
+      <div id="thresholdNote" class="threshold-note" style="display: none;">
+        <i class="fas fa-info-circle"></i> Confidence threshold was applied: original prediction was adjusted because confidence was below 78%.
+      </div>
+      
+      <div class="progress-container">
+        <div class="progress-label">
+          <span>Real</span>
+          <span id="realPct">0%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-bar-fill real" id="realBar"></div>
+        </div>
+      </div>
+      
+      <div class="progress-container">
+        <div class="progress-label">
+          <span>Fake</span>
+          <span id="fakePct">0%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-bar-fill fake" id="fakeBar"></div>
+        </div>
+      </div>
+      
+      <div id="videoStats" class="video-stats" style="display: none;">
+        <h3><i class="fas fa-chart-bar"></i> Video Analysis Stats</h3>
+        <ul>
+          <li>
+            <span>Frames Analyzed:</span>
+            <span id="framesAnalyzed">0</span>
+          </li>
+          <li>
+            <span>Faces Detected:</span>
+            <span id="facesDetected">0</span>
+          </li>
+          <li>
+            <span>Total Frames:</span>
+            <span id="totalFrames">0</span>
+          </li>
+          <li>
+            <span>Processing Time:</span>
+            <span id="processingTime">0s</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="results-container" id="resultsContainer"></div>
+  </div>
+  
+  <footer>
+    &copy; Mouaad Ait Ahlal - DeepTech Summit DeepFake Competition.
+  </footer>
+  
+  <script>
+    const singleApi = "{{ single_api }}";
+    const batchApi  = "{{ batch_api }}";
+    const videoApi  = "{{ video_api }}";
+    
+    // DOM Elements
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+    const loader = document.getElementById("loader");
+    const preview = document.getElementById("preview");
+    const resultDiv = document.getElementById("result");
+    const resLabel = document.getElementById("resLabel");
+    const resDetail = document.getElementById("resDetail");
+    const thresholdNote = document.getElementById("thresholdNote");
+    const realBar = document.getElementById("realBar");
+    const fakeBar = document.getElementById("fakeBar");
+    const realPct = document.getElementById("realPct");
+    const fakePct = document.getElementById("fakePct");
+    const resultsContainer = document.getElementById("resultsContainer");
+    const videoStats = document.getElementById("videoStats");
+    const framesAnalyzed = document.getElementById("framesAnalyzed");
+    const facesDetected = document.getElementById("facesDetected");
+    const totalFrames = document.getElementById("totalFrames");
+    const processingTime = document.getElementById("processingTime");
+    
+    // Tab functionality
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        // Remove active class from all tabs and contents
+        tabs.forEach(t => t.classList.remove('active'));
+        tabContents.forEach(c => c.classList.remove('active'));
+        
+        // Add active class to clicked tab and corresponding content
+        tab.classList.add('active');
+        const target = tab.getAttribute('data-target');
+        document.getElementById(target).classList.add('active');
+        
+        // Reset UI
+        resultDiv.style.display = 'none';
+        preview.innerHTML = '';
+        resultsContainer.innerHTML = '';
+      });
+    });
+    
+    // Utility: show/hide loader
+    function showLoader(){ loader.style.display = "block"; }
+    function hideLoader(){ loader.style.display = "none"; }
+    
+    // Drag-and-drop helpers
+    function setupDrop(area, inputEl, browseBtn, handler) {
+      area.addEventListener("dragover", e => { 
+        e.preventDefault(); 
+        area.classList.add("dragover"); 
+      });
+      
+      area.addEventListener("dragleave", () => 
+        area.classList.remove("dragover")
+      );
+      
+      area.addEventListener("drop", e => {
+        e.preventDefault(); 
+        area.classList.remove("dragover");
+        handler(e.dataTransfer.files);
+      });
+      
+      area.addEventListener("click", () => inputEl.click());
+      browseBtn.onclick = e => {
+        e.stopPropagation();
+        inputEl.click();
+      };
+      
+      inputEl.onchange = () => handler(inputEl.files);
+    }
+    
+    // Render previews
+    function renderPreviews(files) {
+      preview.innerHTML = "";
+      Array.from(files).forEach(file => {
+        if (file.type.startsWith("image/")) {
+          let img = document.createElement("img");
+          img.src = URL.createObjectURL(file);
+          preview.appendChild(img);
+        }
+      });
+    }
+    
+    function renderVideoPreview(file) {
+      preview.innerHTML = "";
+      let vid = document.createElement("video");
+      vid.src = URL.createObjectURL(file);
+      vid.controls = true;
+      preview.appendChild(vid);
+    }
+    
+    // Display single result
+    function displayResult(data) {
+      // Reset UI elements
+      thresholdNote.style.display = 'none';
+      videoStats.style.display = 'none';
+      
+      if (data.error) {
+        // Show error
+        resultDiv.className = "result error";
+        resLabel.textContent = "Error";
+        resDetail.textContent = data.error;
+        realBar.style.width = "0%";
+        fakeBar.style.width = "0%";
+        realPct.textContent = "0";
+        fakePct.textContent = "0";
+      } else {
+        // Show prediction
+        resultDiv.className = "result " + (data.prediction === "REAL" ? "real" : "fake");
+        resLabel.textContent = `Result: ${data.prediction}`;
+        
+        // Set detail text
+        if (data.prediction === "REAL") {
+          resDetail.textContent = `This appears to be a real image with ${(data.probability_real*100).toFixed(2)}% confidence.`;
+        } else {
+          resDetail.textContent = `This appears to be a deepfake with ${(data.probability_fake*100).toFixed(2)}% confidence.`;
+        }
+        
+        // Set progress bars
+        let realP = (data.probability_real*100).toFixed(2);
+        let fakeP = (data.probability_fake*100).toFixed(2);
+        realPct.textContent = realP;
+        fakePct.textContent = fakeP;
+        realBar.style.width = realP + "%";
+        fakeBar.style.width = fakeP + "%";
+        
+        // Show threshold applied note if needed
+        if (data.threshold_applied) {
+          thresholdNote.style.display = 'block';
+        }
+        
+        // Show video stats if available
+        if (data.frames_analyzed) {
+          videoStats.style.display = 'block';
+          framesAnalyzed.textContent = data.frames_analyzed;
+          facesDetected.textContent = data.faces_detected || data.frames_with_faces || 0;
+          totalFrames.textContent = data.total_frames || 0;
+          processingTime.textContent = data.processing_time_seconds ? 
+            `${data.processing_time_seconds}s` : '0s';
+        }
+      }
+      
+      resultDiv.style.display = "block";
+    }
+    
+    // Create a result card for batch processing
+    function createResultCard(result, index) {
+      const card = document.createElement("div");
+      
+      if (result.error) {
+        // Error card
+        card.className = "image-result error";
+        
+        const title = document.createElement("h3");
+        title.textContent = `Image ${index+1}: Error`;
+        card.appendChild(title);
+        
+        const errorMsg = document.createElement("p");
+        errorMsg.textContent = result.error;
+        card.appendChild(errorMsg);
+        
+        return card;
+      }
+      
+      // Regular result card
+      card.className = "image-result " + (result.prediction === "REAL" ? "real" : "fake");
+      
+      const title = document.createElement("h3");
+      title.textContent = `Image ${index+1}: ${result.prediction}`;
+      card.appendChild(title);
+      
+      // Show threshold note if applied
+      if (result.threshold_applied) {
+        const threshNote = document.createElement("div");
+        threshNote.className = "threshold-note";
+        threshNote.innerHTML = '<i class="fas fa-info-circle"></i> Confidence threshold applied.';
+        card.appendChild(threshNote);
+      }
+      
+      // Real progress bar
+      const realContainer = document.createElement("div");
+      realContainer.className = "progress-container";
+      
+      const realLabel = document.createElement("div");
+      realLabel.className = "progress-label";
+      realLabel.innerHTML = `<span>Real</span><span>${(result.probability_real*100).toFixed(2)}%</span>`;
+      realContainer.appendChild(realLabel);
+      
+      const realBarContainer = document.createElement("div");
+      realBarContainer.className = "progress-bar";
+      const realBarFill = document.createElement("div");
+      realBarFill.className = "progress-bar-fill real";
+      realBarFill.style.width = `${(result.probability_real*100).toFixed(2)}%`;
+      realBarContainer.appendChild(realBarFill);
+      realContainer.appendChild(realBarContainer);
+      
+      card.appendChild(realContainer);
+      
+      // Fake progress bar
+      const fakeContainer = document.createElement("div");
+      fakeContainer.className = "progress-container";
+      
+      const fakeLabel = document.createElement("div");
+      fakeLabel.className = "progress-label";
+      fakeLabel.innerHTML = `<span>Fake</span><span>${(result.probability_fake*100).toFixed(2)}%</span>`;
+      fakeContainer.appendChild(fakeLabel);
+      
+      const fakeBarContainer = document.createElement("div");
+      fakeBarContainer.className = "progress-bar";
+      const fakeBarFill = document.createElement("div");
+      fakeBarFill.className = "progress-bar-fill fake";
+      fakeBarFill.style.width = `${(result.probability_fake*100).toFixed(2)}%`;
+      fakeBarContainer.appendChild(fakeBarFill);
+      fakeContainer.appendChild(fakeBarContainer);
+      
+      card.appendChild(fakeContainer);
+      
+      // No face note if relevant
+      if (result.error && result.error.includes("No face detected")) {
+        const errorNote = document.createElement("p");
+        errorNote.className = "error-message";
+        errorNote.innerHTML = '<i class="fas fa-exclamation-triangle"></i> No face detected';
+        card.appendChild(errorNote);
+      }
+      
+      return card;
+    }
+    
+    // Upload and process multiple images
+    async function handleImageFiles(files) {
+      if (!files || files.length === 0) return;
+      
+      // Reset UI
+      preview.innerHTML = "";
+      resultsContainer.innerHTML = "";
+      resultDiv.style.display = "none";
+      showLoader();
+      
+      // Build FormData and render thumbnails
+      let fd = new FormData();
+      renderPreviews(files);
+      
+      Array.from(files).forEach((f) => {
+        fd.append("files", f);
+      });
+      
+      try {
+        // Call the batch endpoint
+        let res = await fetch(batchApi, { method: "POST", body: fd });
+        let json = await res.json();
+        
+        if (!res.ok) {
+          throw new Error(json.error || `HTTP error: ${res.status}`);
+        }
+        
+        // Process results
+        if (json.results && json.results.length > 0) {
+          // Create summary card at the top
+          const summaryCard = document.createElement("div");
+          summaryCard.className = "result";
+          summaryCard.style.display = "block";
+          summaryCard.innerHTML = `
+            <h2><i class="fas fa-clipboard-check"></i> Summary</h2>
+            <p>Processed ${json.summary.processed} of ${json.summary.total} images</p>
+            <p>${json.results.filter(r => r.prediction === "REAL").length} detected as real</p>
+            <p>${json.results.filter(r => r.prediction === "FAKE").length} detected as fake</p>
+            ${json.summary.failed > 0 ? `<p>${json.summary.failed} images failed processing</p>` : ''}
+          `;
+          resultsContainer.appendChild(summaryCard);
+          
+          // Add individual result cards
+          json.results.forEach((r, idx) => {
+            resultsContainer.appendChild(createResultCard(r, idx));
+          });
+          
+          // Add error cards if any
+          if (json.errors && json.errors.length > 0) {
+            json.errors.forEach((err, idx) => {
+              const errorResult = {
+                error: err.error,
+                filename: err.filename
+              };
+              resultsContainer.appendChild(createResultCard(errorResult, json.results.length + idx));
+            });
+          }
+        } else {
+          throw new Error("No results returned from the API");
+        }
+      } catch (err) {
+        console.error("Error processing images:", err);
+        const errorMsg = document.createElement("div");
+        errorMsg.className = "result error";
+        errorMsg.style.display = "block";
+        errorMsg.innerHTML = `
+          <h2><i class="fas fa-exclamation-triangle"></i> Error</h2>
+          <p>${err.message || "Unknown error occurred"}</p>
+        `;
+        resultsContainer.appendChild(errorMsg);
+      } finally {
+        hideLoader();
+      }
+    }
+    
+    // Upload and process a single video
+    async function handleVideoFile(files) {
+      if (!files || files.length === 0) return;
+      
+      let file = files[0];
+      renderVideoPreview(file);
+      showLoader(); 
+      resultDiv.style.display = "none";
+      resultsContainer.innerHTML = ""; // Clear any previous image results
+      
+      let fd = new FormData(); 
+      fd.append("file", file);
+      
+      try {
+        let res = await fetch(videoApi, { method:"POST", body:fd });
+        let json = await res.json();
+        
+        if (!res.ok) {
+          throw new Error(json.error || `HTTP error: ${res.status}`);
+        }
+        
+        displayResult(json);
+      } catch (err) {
+        console.error("Error processing video:", err);
+        displayResult({
+          error: err.message || "Failed to process video"
+        });
+      } finally {
+        hideLoader();
+      }
+    }
+    
+    // Setup event handlers
+    setupDrop(
+      document.getElementById("imgUpload"),
+      document.getElementById("imgInput"),
+      document.getElementById("imgBrowse"),
+      handleImageFiles
+    );
+    
+    setupDrop(
+      document.getElementById("vidUpload"),
+      document.getElementById("vidInput"),
+      document.getElementById("vidBrowse"),
+      handleVideoFile
+    );
+  </script>
+</body>
+</html>

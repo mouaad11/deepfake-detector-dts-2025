@@ -21,11 +21,10 @@
 ## 🗂️ Project Structure
 
 ```
-├── frontend/    # Django web interface (user upload + result view)
-├── backend/     # Flask API for inference (/predict, /batch, /video)
-├── model/       # Trained PyTorch model (EfficientNet-B0)
-├── notebook/    # Colab notebook for training & evaluation
-├── docs/        # PDF documentation of full architecture & results
+├── frontendapp/    # Django web interface (user upload + result view)
+├── deepfake_detector.pt/       # Trained PyTorch model (EfficientNet-B0)
+├── DeepFake_Detector_Real_Recognize_Real.ipynb/    # notebook for training & evaluation containing the flask API for inference (/predict, /batch, /video)
+├── Deepfake_DTS_2025.pdf/        # PDF documentation of full architecture & results
 └── README.md    # You are here
 ```
 
@@ -33,7 +32,7 @@
 
 ## 📸 Demo
 
-[![Watch the demo video](https://img.youtube.com/vi/YOUR_VIDEO_ID_HERE/0.jpg)](https://www.youtube.com/watch?v=YOUR_VIDEO_ID_HERE)
+[![Watch the demo video](https://img.youtube.com/vi/YOUR_VIDEO_ID_HERE/0.jpg)]([https://www.youtube.com/watch?v=YOUR_VIDEO_ID_HERE](https://x.com/AbenMuath/status/1921544485575471296))
 
 ---
 
@@ -48,7 +47,7 @@
 | Inference | ~70ms (T4) |
 | Model Size | ~15MB |
 
-The model was trained on the **Deepfake Faces Kaggle dataset**, balanced to 34K images.
+The model was trained on the **Deepfake Faces Kaggle dataset**, balanced to 34K images: https://www.kaggle.com/datasets/dagnelies/deepfakefaces
 
 ---
 
@@ -63,23 +62,6 @@ The model was trained on the **Deepfake Faces Kaggle dataset**, balanced to 34K 
 - Flask
 - ngrok (optional, for tunneling)
 
-### 🔄 Installation
-
-```bash
-git clone https://github.com/your-username/real-recognize-real.git
-cd real-recognize-real
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Launch backend API (Flask)
-cd backend/
-python app.py
-
-# Launch frontend (Django)
-cd ../frontend/
-python manage.py runserver
-```
 
 Use ngrok if you want public access to the Flask API.
 
@@ -117,7 +99,7 @@ Comprehensive PDF documentation includes:
 - Evaluation
 - Adversarial defense research
 
-📄 [Read the Docs](#)
+📄 [Read the Docs](#Deepfake_DTS_2025.pdf)
 
 ---
 
